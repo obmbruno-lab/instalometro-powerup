@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard Instalômetro</title>
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 20px;
+      background: #f4f5f7;
+    }
+    h2 {
+      color: #172b4d;
+      margin-top: 0;
+      font-size: 20px;
+      border-bottom: 2px solid #0079bf;
+      padding-bottom: 10px;
+    }
+    h3 {
+      color: #172b4d;
+      font-size: 16px;
+      margin-top: 20px;
+    }
+    .section {
+      background: #fff;
+      padding: 15px;
+      border-radius: 3px;
+      margin-bottom: 15px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    table { 
+      border-collapse: collapse; 
+      width: 100%;
+      margin-top: 10px;
+    }
+    th, td { 
+      border: 1px solid #dfe1e6;
+      padding: 10px;
+      text-align: left;
+    }
+    th { 
+      background-color: #f4f5f7;
+      font-weight: 600;
+      color: #172b4d;
+    }
+    td {
+      color: #172b4d;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge.good {
+      background: #61bd4f;
+      color: white;
+    }
+    .badge.warning {
+      background: #f2d600;
+      color: #172b4d;
+    }
+    .badge.bad {
+      background: #eb5a46;
+      color: white;
+    }
+    .badge.neutral {
+      background: #dfe1e6;
+      color: #172b4d;
+    }
+    button { 
+      margin-top: 10px;
+      padding: 10px 15px;
+      background: #0079bf;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #026aa7;
+    }
+    .empty {
+      color: #5e6c84;
+      font-style: italic;
+      text-align: center;
+      padding: 20px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .stat-card {
+      background: #f4f5f7;
+      padding: 12px;
+      border-radius: 3px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0079bf;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #5e6c84;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h2>📊 Dashboard Instalômetro</h2>
+  
+  <div class="section">
+    <h3>Identificação</h3>
+    <table id="identification">
+      <tr><th>Campo</th><th>Valor</th></tr>
+    </table>
+  </div>
+  
+  <div class="section">
+    <h3>Medidas e Cálculos</h3>
+    <table id="measures">
+      <tr><th>Campo</th><th>Valor</th></tr>
+    </table>
+  </div>
+  
+  <div class="section">
+    <h3>Registro de Tempo</h3>
+    <table id="timing">
+      <tr><th>Campo</th><th>Valor</th></tr>
+    </table>
+  </div>
+  
+  <div class="section">
+    <h3>Produtividade</h3>
+    <div class="stats" id="stats"></div>
+  </div>
+  
+  <div class="section">
+    <button id="export">💾 Exportar CSV</button>
+    <button id="refresh" style="background: #5e6c84;">🔄 Atualizar</button>
+  </div>
+  
+  <script>
+    var t = TrelloPowerUp.iframe();
+    
+    function loadData() {
+      t.get('card','shared','instalometroData',{}).then(function(data){
+        if (!data || Object.keys(data).length === 0) {
+          showEmpty();
+          return;
+        }
+        
+        populateIdentification(data);
+        populateMeasures(data);
+        populateTiming(data);
+        populateStats(data);
+      });
+    }
+    
+    function showEmpty() {
+      document.querySelectorAll('.section').forEach(function(section) {
+        var table = section.querySelector('table');
+        if (table) {
+          table.innerHTML = '<tr><td colspan="2" class="empty">Nenhum dado registrado ainda</td></tr>';
+        }
+      });
+    }
+    
+    function populateIdentification(data) {
+      var table = document.getElementById('identification');
+      table.innerHTML = '<tr><th>Campo</th><th>Valor</th></tr>';
+      
+      addRow(table, 'OS', data.os || '-');
+      addRow(table, 'Item da OS', data.item_os || '-');
+      addRow(table, 'Cliente', data.cliente || '-');
+    }
+    
+    function populateMeasures(data) {
+      var table = document.getElementById('measures');
+      table.innerHTML = '<tr><th>Campo</th><th>Valor</th></tr>';
+      
+      addRow(table, 'Altura', data.altura ? data.altura.toFixed(2) + ' m' : '-');
+      addRow(table, 'Largura', data.largura ? data.largura.toFixed(2) + ' m' : '-');
+      addRow(table, 'Quantidade', data.quantidade || '-');
+      addRow(table, 'm² Unitário', data.m2Unit ? data.m2Unit.toFixed(2) + ' m²' : '-');
+      addRow(table, 'm² Total', data.m2Total ? data.m2Total.toFixed(2) + ' m²' : '-');
+    }
+    
+    function populateTiming(data) {
+      var table = document.getElementById('timing');
+      table.innerHTML = '<tr><th>Campo</th><th>Valor</th></tr>';
+      
+      addRow(table, 'Check-in', data.checkinTime ? formatDateTime(data.checkinTime) : '-');
+      addRow(table, 'Check-out', data.checkoutTime ? formatDateTime(data.checkoutTime) : '-');
+      addRow(table, 'Horas Trabalhadas', data.horasTrabalhadas ? data.horasTrabalhadas.toFixed(2) + ' h' : '-');
+      
+      if (data.gpsLat && data.gpsLon) {
+        addRow(table, 'GPS Check-in', data.gpsLat + ', ' + data.gpsLon);
+      }
+      if (data.gpsLatOut && data.gpsLonOut) {
+        addRow(table, 'GPS Check-out', data.gpsLatOut + ', ' + data.gpsLonOut);
+      }
+    }
+    
+    function populateStats(data) {
+      var statsDiv = document.getElementById('stats');
+      statsDiv.innerHTML = '';
+      
+      // m² Total
+      if (data.m2Total) {
+        addStat(statsDiv, data.m2Total.toFixed(2), 'm² Instalados');
+      }
+      
+      // Horas
+      if (data.horasTrabalhadas) {
+        addStat(statsDiv, data.horasTrabalhadas.toFixed(2), 'Horas');
+      }
+      
+      // Produtividade
+      if (data.produtividade) {
+        var badge = '';
+        if (data.produtividade >= 10) {
+          badge = '<span class="badge good">' + data.produtividade.toFixed(2) + ' m²/h</span>';
+        } else if (data.produtividade >= 8) {
+          badge = '<span class="badge warning">' + data.produtividade.toFixed(2) + ' m²/h</span>';
+        } else {
+          badge = '<span class="badge bad">' + data.produtividade.toFixed(2) + ' m²/h</span>';
+        }
+        
+        var statCard = document.createElement('div');
+        statCard.className = 'stat-card';
+        statCard.innerHTML = '<div style="margin-top: 10px;">' + badge + '</div><div class="stat-label">Produtividade</div>';
+        statsDiv.appendChild(statCard);
+      }
+      
+      if (statsDiv.innerHTML === '') {
+        statsDiv.innerHTML = '<div class="empty">Dados insuficientes para calcular estatísticas</div>';
+      }
+    }
+    
+    function addRow(table, label, value) {
+      var tr = document.createElement('tr');
+      var td1 = document.createElement('td');
+      var td2 = document.createElement('td');
+      td1.textContent = label;
+      td2.innerHTML = value;
+      td1.style.fontWeight = '600';
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      table.appendChild(tr);
+    }
+    
+    function addStat(container, value, label) {
+      var statCard = document.createElement('div');
+      statCard.className = 'stat-card';
+      statCard.innerHTML = '<div class="stat-value">' + value + '</div><div class="stat-label">' + label + '</div>';
+      container.appendChild(statCard);
+    }
+    
+    function formatDateTime(isoString) {
+      var date = new Date(isoString);
+      return date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    
+    // Exportar CSV
+    document.getElementById('export').addEventListener('click', function(){
+      t.get('card','shared','instalometroData',{}).then(function(data){
+        var csv = 'Campo,Valor\n';
+        var pairs = {
+          'OS': data.os || '',
+          'Item_OS': data.item_os || '',
+          'Cliente': data.cliente || '',
+          'Altura (m)': data.altura || '',
+          'Largura (m)': data.largura || '',
+          'Quantidade': data.quantidade || '',
+          'm² Unitário': data.m2Unit ? data.m2Unit.toFixed(2) : '',
+          'm² Total': data.m2Total ? data.m2Total.toFixed(2) : '',
+          'Check-in': data.checkinTime || '',
+          'Check-out': data.checkoutTime || '',
+          'Horas Trabalhadas': data.horasTrabalhadas ? data.horasTrabalhadas.toFixed(2) : '',
+          'Produtividade (m²/h)': data.produtividade ? data.produtividade.toFixed(2) : '',
+          'GPS Check-in Lat': data.gpsLat || '',
+          'GPS Check-in Lon': data.gpsLon || '',
+          'GPS Check-out Lat': data.gpsLatOut || '',
+          'GPS Check-out Lon': data.gpsLonOut || ''
+        };
+        
+        for (var key in pairs) { 
+          csv += '"' + key + '","' + pairs[key] + '"\n';
+        }
+        
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'instalometro_' + (data.os || 'export') + '.csv';
+        a.click();
+        
+        t.alert({
+          message: '✅ CSV exportado com sucesso!',
+          duration: 3
+        });
+      });
+    });
+    
+    // Atualizar
+    document.getElementById('refresh').addEventListener('click', function(){
+      loadData();
+      t.alert({
+        message: '🔄 Dados atualizados!',
+        duration: 2
+      });
+    });
+    
+    // Carregar dados ao abrir
+    loadData();
+  </script>
+</body>
+</html>
+

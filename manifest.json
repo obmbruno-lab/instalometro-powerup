@@ -1,0 +1,38 @@
+{
+  "manifest_version": 1,
+  "name": "Instalômetro - Indústria Visual",
+  "description": "Monitora produtividade de instalação com fotos de check-in/out, cálculo de m² e m²/h para equipes da Indústria Visual",
+  "homepage_url": "https://www.industriavisual.com.br",
+  "author": "Indústria Visual",
+  "version": "1.1.0",
+  "permissions": [
+    "attachments",
+    "card-buttons",
+    "card-badges",
+    "board-buttons",
+    "show-settings"
+  ],
+  "capabilities": {
+    "card-buttons": {
+      "items": [
+        { "text": "📋 Editar Identificação", "callback": "showIdModal", "condition": "edit" },
+        { "text": "📏 Editar Medidas", "callback": "showMeasuresModal", "condition": "edit" },
+        { "text": "✅ Check-In", "callback": "checkIn", "condition": "edit" },
+        { "text": "🏁 Check-Out", "callback": "checkOut", "condition": "edit" },
+        { "text": "📊 Dashboard", "callback": "showDashboard", "condition": "always" }
+      ]
+    },
+    "card-badges": {
+      "callback": "cardBadges"
+    },
+    "board-buttons": {
+      "items": [
+        { "text": "📊 Instalômetro - Dashboard", "callback": "showDashboard" }
+      ]
+    },
+    "show-settings": {
+      "callback": "showSettings"
+    }
+  }
+}
+

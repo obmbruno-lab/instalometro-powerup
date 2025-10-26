@@ -5,7 +5,7 @@
  */
 
 var Promise = TrelloPowerUp.Promise;
-var t = TrelloPowerUp.iframe();
+
 
 // Inicialização do Power-Up
 TrelloPowerUp.initialize({

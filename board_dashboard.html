@@ -311,7 +311,7 @@
         console.log('Total de cards no board:', cards.length);
         
         var promises = cards.map(function(card) {
-          return t.get(card.id, 'shared').then(function(data) {
+          return t.get(card.id, 'shared', 'instalometroData').then(function(data) {
             if (data && (data.os || data.m2Total || data.checkinTime)) {
               return {
                 cardId: card.id,

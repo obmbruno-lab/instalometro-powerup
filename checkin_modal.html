@@ -24,15 +24,32 @@
       color: #172b4d;
       margin-bottom: 15px;
     }
-    .instalador-box {
-      background: #d4edda;
-      padding: 12px;
+    label {
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #172b4d;
+      font-size: 13px;
+    }
+    input[type=text] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #dfe1e6;
       border-radius: 3px;
       font-size: 14px;
-      color: #155724;
-      margin-bottom: 15px;
-      font-weight: 600;
-      border-left: 4px solid #61bd4f;
+      box-sizing: border-box;
+    }
+    input[type=text]:focus {
+      outline: none;
+      border-color: #0079bf;
+      box-shadow: 0 0 0 3px rgba(0,121,191,0.1);
+    }
+    .instalador-hint {
+      font-size: 11px;
+      color: #5e6c84;
+      margin-top: 3px;
+      font-style: italic;
     }
     .warning {
       background: #fff3cd;
@@ -107,145 +124,158 @@
 <body>
   <h3>✅ Check-In - Início da Instalação</h3>
   
-  <div class="instalador-box" id="instalador-info">
-    👤 Carregando instalador...
-  </div>
-  
   <div class="info">
-    Tire uma foto do local antes de iniciar a instalação. A data/hora e localização serão capturadas automaticamente.
-  </div>
-  <div class="warning" id="warning">
-    ⚠️ Já existe um check-in registrado. Ao enviar uma nova foto, o check-in anterior será substituído.
+    📍 Registre o início da instalação. A hora será capturada automaticamente.
   </div>
   
-  <input id="file" type="file" accept="image/*" capture="environment">
+  <label>👤 Nome do Instalador *</label>
+  <input type="text" id="instalador" placeholder="Ex: João Silva">
+  <div class="instalador-hint">
+    💡 Pré-preenchido com seu nome, mas você pode editar para registrar o instalador real no campo
+  </div>
+  
+  <div class="warning" id="warningBox">
+    ⚠️ Atenção: Este card já tem um Check-In registrado. Fazer novo Check-In irá sobrescrever os dados anteriores.
+  </div>
+  
+  <label>📸 Foto do Local (Antes da Instalação)</label>
+  <input type="file" id="photoInput" accept="image/*" capture="environment">
+  <div class="instalador-hint">
+    💡 Tire uma foto do local antes de começar. GPS e hora serão extraídos automaticamente.
+  </div>
   
   <div class="preview" id="preview">
-    <img id="preview-img" src="" alt="Preview">
+    <img id="previewImg" src="" alt="Preview">
   </div>
   
-  <div class="status" id="status"></div>
+  <button id="saveBtn" onclick="saveCheckin()">✅ Fazer Check-In</button>
   
-  <button id="upload" disabled>📸 Registrar Check-In</button>
+  <div class="status" id="statusBox"></div>
   
   <script>
     var t = TrelloPowerUp.iframe();
-    var selectedFile = null;
-    var currentMember = null;
+    var photoFile = null;
+    var photoData = null;
     
-    // Capturar membro atual (instalador)
-    t.member('all').then(function(member) {
-      currentMember = member;
-      document.getElementById('instalador-info').innerHTML = 
-        '👤 <strong>Instalador:</strong> ' + member.fullName;
-    }).catch(function() {
-      document.getElementById('instalador-info').innerHTML = 
-        '👤 <strong>Instalador:</strong> Não identificado';
-    });
-    
-    // Verificar se já existe check-in
-    t.get('card','shared','instalometroData',{}).then(function(data){
+    // Carregar nome do usuário atual e dados existentes
+    Promise.all([
+      t.member('fullName'),
+      t.get('card', 'shared')
+    ]).then(function(results) {
+      var memberName = results[0];
+      var sharedData = results[1];
+      var data = sharedData.instalometroData || sharedData;
+      
+      // Pré-preencher com nome do usuário atual
+      document.getElementById('instalador').value = memberName || '';
+      
+      // Se já existe check-in, mostrar aviso
       if (data.checkinTime) {
-        document.getElementById('warning').style.display = 'block';
+        document.getElementById('warningBox').style.display = 'block';
       }
+    }).catch(function(error) {
+      console.error('Erro ao carregar dados:', error);
+      document.getElementById('instalador').value = '';
     });
     
-    // Preview da foto selecionada
-    document.getElementById('file').addEventListener('change', function(e) {
-      selectedFile = e.target.files[0];
-      if (selectedFile) {
+    // Preview da foto
+    document.getElementById('photoInput').addEventListener('change', function(e) {
+      photoFile = e.target.files[0];
+      if (photoFile) {
         var reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('preview-img').src = e.target.result;
+        reader.onload = function(event) {
+          document.getElementById('previewImg').src = event.target.result;
           document.getElementById('preview').style.display = 'block';
-          document.getElementById('upload').disabled = false;
+          
+          // Extrair EXIF
+          EXIF.getData(photoFile, function() {
+            var exifData = EXIF.getAllTags(this);
+            photoData = {
+              datetime: exifData.DateTime || exifData.DateTimeOriginal,
+              lat: EXIF.getTag(this, 'GPSLatitude'),
+              lon: EXIF.getTag(this, 'GPSLongitude'),
+              latRef: EXIF.getTag(this, 'GPSLatitudeRef'),
+              lonRef: EXIF.getTag(this, 'GPSLongitudeRef')
+            };
+            console.log('EXIF extraído:', photoData);
+          });
         };
-        reader.readAsDataURL(selectedFile);
+        reader.readAsDataURL(photoFile);
       }
     });
     
-    // Upload e processamento
-    document.getElementById('upload').addEventListener('click', function() {
-      if (!selectedFile) {
-        showStatus('Selecione uma foto antes de enviar.', 'error');
+    function saveCheckin() {
+      var instalador = document.getElementById('instalador').value.trim();
+      
+      // Validação
+      if (!instalador) {
+        showStatus('❌ Por favor, preencha o nome do instalador.', 'error');
         return;
       }
       
-      document.getElementById('upload').disabled = true;
-      document.getElementById('upload').textContent = '⏳ Processando...';
+      if (!photoFile) {
+        showStatus('❌ Por favor, tire uma foto do local.', 'error');
+        return;
+      }
       
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        var img = new Image();
-        img.onload = function() {
-          EXIF.getData(img, function() {
-            var checkinTime = new Date().toISOString();
-            var gpsData = null;
-            
-            // Tentar extrair dados EXIF
-            var exifTime = EXIF.getTag(this, 'DateTime') || EXIF.getTag(this, 'DateTimeOriginal');
-            if (exifTime) {
-              try {
-                var parts = exifTime.split(' ');
-                var dateParts = parts[0].split(':');
-                var timeParts = parts[1].split(':');
-                checkinTime = new Date(dateParts[0], dateParts[1]-1, dateParts[2], timeParts[0], timeParts[1], timeParts[2]).toISOString();
-              } catch(e) {
-                console.log('Erro ao processar data EXIF, usando hora atual');
-              }
-            }
-            
-            // Extrair GPS
-            var lat = EXIF.getTag(this, 'GPSLatitude');
-            var lon = EXIF.getTag(this, 'GPSLongitude');
-            var latRef = EXIF.getTag(this, 'GPSLatitudeRef');
-            var lonRef = EXIF.getTag(this, 'GPSLongitudeRef');
-            
-            if (lat && lon) {
-              var latDec = lat[0] + lat[1]/60 + lat[2]/3600;
-              var lonDec = lon[0] + lon[1]/60 + lon[2]/3600;
-              if (latRef === 'S') latDec = -latDec;
-              if (lonRef === 'W') lonDec = -lonDec;
-              gpsData = {lat: latDec, lon: lonDec};
-            }
-            
-            // Fazer upload da foto
-            t.attach({
-              name: 'Check-In - ' + new Date(checkinTime).toLocaleString('pt-BR'),
-              url: e.target.result
-            }).then(function() {
-              // Salvar dados
-              return t.get('card', 'shared', 'instalometroData', {});
-            }).then(function(instalometroData) {
-              instalometroData.checkinTime = checkinTime;
-              instalometroData.checkinGPS = gpsData;
-              instalometroData.instalador = currentMember ? currentMember.fullName : 'Desconhecido';
-              instalometroData.instaladorUsername = currentMember ? currentMember.username : 'unknown';
-              instalometroData.instaladorId = currentMember ? currentMember.id : null;
-              
-              return t.set('card', 'shared', 'instalometroData', instalometroData);
-            }).then(function() {
-              showStatus('✅ Check-in registrado com sucesso!', 'success');
-              document.getElementById('upload').textContent = '✅ Check-In Registrado';
-              setTimeout(function() {
-                t.closePopup();
-              }, 1500);
-            }).catch(function(error) {
-              showStatus('❌ Erro ao registrar check-in: ' + error, 'error');
-              document.getElementById('upload').disabled = false;
-              document.getElementById('upload').textContent = '📸 Registrar Check-In';
-            });
-          });
-        };
-        img.src = e.target.result;
+      document.getElementById('saveBtn').disabled = true;
+      showStatus('⏳ Salvando check-in...', 'success');
+      
+      // Capturar hora atual
+      var checkinTime = new Date().toISOString();
+      
+      // Preparar dados para salvar
+      var dataToSave = {
+        instalador: instalador,
+        checkinTime: checkinTime
       };
-      reader.readAsDataURL(selectedFile);
-    });
+      
+      // Se tiver dados EXIF, usar a hora da foto
+      if (photoData && photoData.datetime) {
+        dataToSave.checkinTime = photoData.datetime;
+      }
+      
+      // Salvar GPS se disponível
+      if (photoData && photoData.lat && photoData.lon) {
+        dataToSave.gpsLat = convertDMSToDD(photoData.lat, photoData.latRef);
+        dataToSave.gpsLon = convertDMSToDD(photoData.lon, photoData.lonRef);
+      }
+      
+      // Fazer upload da foto
+      t.attach({
+        name: 'Check-In - ' + new Date().toLocaleString('pt-BR'),
+        url: URL.createObjectURL(photoFile)
+      }).then(function() {
+        // Salvar dados no card
+        return t.get('card', 'shared');
+      }).then(function(sharedData) {
+        var existingData = sharedData.instalometroData || sharedData;
+        var updatedData = Object.assign({}, existingData, dataToSave);
+        
+        return t.set('card', 'shared', 'instalometroData', updatedData);
+      }).then(function() {
+        showStatus('✅ Check-In realizado com sucesso!', 'success');
+        setTimeout(function() {
+          t.closePopup();
+        }, 1500);
+      }).catch(function(error) {
+        console.error('Erro ao salvar check-in:', error);
+        showStatus('❌ Erro ao salvar. Tente novamente.', 'error');
+        document.getElementById('saveBtn').disabled = false;
+      });
+    }
+    
+    function convertDMSToDD(dms, ref) {
+      if (!dms || dms.length !== 3) return null;
+      var dd = dms[0] + dms[1]/60 + dms[2]/3600;
+      if (ref === 'S' || ref === 'W') dd = dd * -1;
+      return dd;
+    }
     
     function showStatus(message, type) {
-      var status = document.getElementById('status');
-      status.textContent = message;
-      status.className = 'status ' + type;
+      var statusBox = document.getElementById('statusBox');
+      statusBox.textContent = message;
+      statusBox.className = 'status ' + type;
     }
   </script>
 </body>

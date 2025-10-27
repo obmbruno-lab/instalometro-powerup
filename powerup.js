@@ -1,7 +1,6 @@
-/* global TrelloPowerUp */
 
-// Instalômetro Power-Up v1.7 - Versão Otimizada
-// Combina: seção visual + botões funcionais + campo instalador
+// Instalômetro Power-Up v1.9 - Com Dashboard Consolidado do Board
+// Combina: seção visual + botões funcionais + campo instalador + dashboard do board
 
 var Promise = TrelloPowerUp.Promise;
 
@@ -42,8 +41,9 @@ TrelloPowerUp.initialize({
       icon: 'https://cdn-icons-png.flaticon.com/512/5610/5610945.png',
       text: '🏁 Check-Out',
       callback: function(t) {
-        return t.get('card', 'shared', 'instalometroData', {})
-          .then(function(data) {
+        return t.get('card', 'shared')
+          .then(function(sharedData) {
+            var data = sharedData.instalometroData || sharedData;
             if (!data.checkinTime) {
               return t.alert({
                 message: '⚠️ Você precisa fazer Check-In antes do Check-Out!',
@@ -51,14 +51,14 @@ TrelloPowerUp.initialize({
               });
             }
             return t.popup({
-              title: 'Check-Out - Fim da Instalação',
+              title: 'Check-Out - Finalização da Instalação',
               url: './checkout_modal.html',
-              height: 400
+              height: 450
             });
           });
       }
     }, {
-      icon: 'https://cdn-icons-png.flaticon.com/512/3281/3281289.png',
+      icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png',
       text: '📊 Dashboard',
       callback: function(t) {
         return t.modal({
@@ -70,23 +70,29 @@ TrelloPowerUp.initialize({
     }];
   },
 
-  // Card Back Section (seção visual com status)
-  'card-back-section': function(t, options) {
+  // Board Buttons (topo do board - dashboard consolidado)
+  'board-buttons': function(t, options) {
     return [{
-      title: '📊 Instalômetro',
-      icon: 'https://cdn-icons-png.flaticon.com/512/3281/3281289.png',
-      content: {
-        type: 'iframe',
-        url: t.signUrl('./card_section_status_only.html'),
-        height: 200
+      icon: {
+        dark: 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png',
+        light: 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png'
+      },
+      text: '📊 Dashboard Consolidado',
+      callback: function(t) {
+        return t.modal({
+          title: 'Dashboard Consolidado - Instalômetro',
+          url: './board_dashboard.html',
+          fullscreen: true
+        });
       }
     }];
   },
 
-  // Card Badges (topo do card)
+  // Card Badges (badges coloridos no card)
   'card-badges': function(t, options) {
-    return t.get('card', 'shared', 'instalometroData', {})
-      .then(function(data) {
+    return t.get('card', 'shared')
+      .then(function(sharedData) {
+        var data = sharedData.instalometroData || sharedData;
         var badges = [];
 
         // Badge OS
@@ -114,9 +120,9 @@ TrelloPowerUp.initialize({
         }
 
         // Badge m²
-        if (data.m2Total > 0) {
+        if (data.m2Total) {
           badges.push({
-            text: data.m2Total.toFixed(2) + ' m²',
+            text: parseFloat(data.m2Total).toFixed(2) + ' m²',
             color: 'orange'
           });
         }
@@ -129,24 +135,28 @@ TrelloPowerUp.initialize({
           });
         }
 
-        // Badge Produtividade (se tiver check-out)
+        // Badge Produtividade (com cores baseadas em metas)
         if (data.produtividade) {
-          var color = 'red';
-          if (data.produtividade >= 10) color = 'green';
-          else if (data.produtividade >= 7) color = 'yellow';
-          
+          var prod = parseFloat(data.produtividade);
+          var color = 'red'; // < 7 m²/h
+          if (prod >= 10) color = 'green'; // >= 10 m²/h
+          else if (prod >= 7) color = 'yellow'; // 7-10 m²/h
+
           badges.push({
-            text: data.produtividade.toFixed(2) + ' m²/h',
+            text: prod.toFixed(2) + ' m²/h',
             color: color
           });
         }
 
-        // Badge Alerta (se check-in > 12h sem check-out)
+        // Badge Alerta (instalação sem check-out há mais de 12h)
         if (data.checkinTime && !data.checkoutTime) {
-          var elapsed = (new Date() - new Date(data.checkinTime)) / 1000 / 60 / 60;
-          if (elapsed > 12) {
+          var checkinDate = new Date(data.checkinTime);
+          var now = new Date();
+          var horasDecorridas = (now - checkinDate) / (1000 * 60 * 60);
+          
+          if (horasDecorridas > 12) {
             badges.push({
-              text: '⚠️ Sem check-out há ' + Math.floor(elapsed) + 'h',
+              text: '⚠️ +12h sem check-out',
               color: 'red'
             });
           }
@@ -156,25 +166,20 @@ TrelloPowerUp.initialize({
       });
   },
 
-  // Board Buttons (botão no board)
-  'board-buttons': function(t, options) {
-    return [{
-      icon: {
-        dark: 'https://cdn-icons-png.flaticon.com/512/3281/3281289.png',
-        light: 'https://cdn-icons-png.flaticon.com/512/3281/3281289.png'
-      },
-      text: '📊 Dashboard Instalômetro',
-      callback: function(t) {
-        return t.modal({
-          title: 'Dashboard Geral - Instalômetro',
-          url: './dashboard.html',
-          height: 700
-        });
+  // Card Back Section (seção visual no card)
+  'card-back-section': function(t, options) {
+    return {
+      title: '📊 Instalômetro',
+      icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png',
+      content: {
+        type: 'iframe',
+        url: t.signUrl('./card_section_status_only.html'),
+        height: 280
       }
-    }];
+    };
   },
 
-  // Show Settings
+  // Show Settings (página de configurações)
   'show-settings': function(t, options) {
     return t.popup({
       title: 'Configurações do Instalômetro',

@@ -24,14 +24,78 @@
       color: #172b4d;
       margin-bottom: 15px;
     }
-    .warning {
-      background: #fff3cd;
+    label {
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #172b4d;
+      font-size: 13px;
+    }
+    input[type=text] {
+      width: 100%;
       padding: 10px;
+      border: 1px solid #dfe1e6;
       border-radius: 3px;
-      font-size: 12px;
-      color: #856404;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    input[type=text]:focus {
+      outline: none;
+      border-color: #0079bf;
+      box-shadow: 0 0 0 3px rgba(0,121,191,0.1);
+    }
+    .instalador-hint {
+      font-size: 11px;
+      color: #5e6c84;
+      margin-top: 3px;
+      font-style: italic;
+    }
+    .summary {
+      background: #f4f5f7;
+      padding: 12px;
+      border-radius: 3px;
       margin-bottom: 15px;
-      display: none;
+      font-size: 13px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .summary-label {
+      color: #5e6c84;
+      font-weight: 600;
+    }
+    .summary-value {
+      color: #172b4d;
+      font-weight: 600;
+    }
+    .produtividade {
+      background: #d4edda;
+      padding: 15px;
+      border-radius: 3px;
+      text-align: center;
+      margin-top: 15px;
+      border-left: 4px solid #61bd4f;
+    }
+    .produtividade.warning {
+      background: #fff3cd;
+      border-left-color: #f2d600;
+    }
+    .produtividade.bad {
+      background: #f8d7da;
+      border-left-color: #eb5a46;
+    }
+    .produtividade-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #172b4d;
+      margin-bottom: 5px;
+    }
+    .produtividade-label {
+      font-size: 14px;
+      color: #5e6c84;
     }
     input[type=file] { 
       margin-top: 10px;
@@ -75,36 +139,6 @@
       border-radius: 3px;
       border: 2px solid #dfe1e6;
     }
-    .summary {
-      background: #fff;
-      padding: 12px;
-      border-radius: 3px;
-      margin-top: 15px;
-      border: 2px solid #dfe1e6;
-      display: none;
-    }
-    .summary-item {
-      display: flex;
-      justify-content: space-between;
-      margin: 5px 0;
-      font-size: 14px;
-    }
-    .summary-label {
-      color: #5e6c84;
-    }
-    .summary-value {
-      font-weight: 600;
-      color: #172b4d;
-    }
-    .summary-value.good {
-      color: #61bd4f;
-    }
-    .summary-value.warning {
-      color: #f2d600;
-    }
-    .summary-value.bad {
-      color: #eb5a46;
-    }
     .status {
       margin-top: 10px;
       padding: 8px;
@@ -125,206 +159,217 @@
   </style>
 </head>
 <body>
-  <h3>🏁 Check-Out - Fim da Instalação</h3>
+  <h3>🏁 Check-Out - Finalização da Instalação</h3>
+  
   <div class="info">
-    Tire uma foto do trabalho finalizado. A produtividade será calculada automaticamente.
-  </div>
-  <div class="warning" id="warning">
-    ⚠️ Já existe um check-out registrado. Ao enviar uma nova foto, o check-out anterior será substituído.
-  </div>
-  
-  <input id="file" type="file" accept="image/*" capture="environment">
-  
-  <div class="preview" id="preview">
-    <img id="preview-img" src="" alt="Preview">
+    ✅ Finalize a instalação. A produtividade será calculada automaticamente.
   </div>
   
   <div class="summary" id="summary">
-    <div class="summary-item">
-      <span class="summary-label">Tempo de trabalho:</span>
-      <span class="summary-value" id="tempo">-</span>
+    <div class="summary-row">
+      <span class="summary-label">👤 Instalador:</span>
+      <span class="summary-value" id="instaladorAtual">-</span>
     </div>
-    <div class="summary-item">
-      <span class="summary-label">m² instalados:</span>
-      <span class="summary-value" id="m2">-</span>
+    <div class="summary-row">
+      <span class="summary-label">📏 m² Total:</span>
+      <span class="summary-value" id="m2Total">-</span>
     </div>
-    <div class="summary-item">
-      <span class="summary-label">Produtividade:</span>
-      <span class="summary-value" id="produtividade">-</span>
+    <div class="summary-row">
+      <span class="summary-label">⏱️ Check-In:</span>
+      <span class="summary-value" id="checkinTime">-</span>
     </div>
   </div>
   
-  <div class="status" id="status"></div>
+  <label>👤 Nome do Instalador *</label>
+  <input type="text" id="instalador" placeholder="Ex: João Silva">
+  <div class="instalador-hint">
+    💡 Você pode editar o nome do instalador se necessário (ex: se quem fez check-in foi diferente de quem instalou)
+  </div>
   
-  <button id="upload" disabled>🏁 Registrar Check-Out</button>
+  <label>📸 Foto do Local (Após a Instalação)</label>
+  <input type="file" id="photoInput" accept="image/*" capture="environment">
+  <div class="instalador-hint">
+    💡 Tire uma foto do trabalho finalizado. GPS e hora serão extraídos automaticamente.
+  </div>
+  
+  <div class="preview" id="preview">
+    <img id="previewImg" src="" alt="Preview">
+  </div>
+  
+  <div class="produtividade" id="produtividadeBox" style="display:none;">
+    <div class="produtividade-value" id="produtividadeValue">-</div>
+    <div class="produtividade-label">m²/h (Produtividade)</div>
+  </div>
+  
+  <button id="saveBtn" onclick="saveCheckout()">🏁 Fazer Check-Out</button>
+  
+  <div class="status" id="statusBox"></div>
   
   <script>
     var t = TrelloPowerUp.iframe();
-    var selectedFile = null;
-    var cardData = null;
+    var photoFile = null;
+    var photoData = null;
+    var existingData = {};
     
-    // Carregar dados do card
-    t.get('card','shared','instalometroData',{}).then(function(data){
-      cardData = data;
+    // Carregar dados existentes
+    t.get('card', 'shared').then(function(sharedData) {
+      existingData = sharedData.instalometroData || sharedData;
       
-      if (data.checkoutTime) {
-        document.getElementById('warning').style.display = 'block';
+      // Preencher resumo
+      if (existingData.instalador) {
+        document.getElementById('instaladorAtual').textContent = existingData.instalador;
+        document.getElementById('instalador').value = existingData.instalador;
       }
       
-      if (!data.checkinTime) {
-        showStatus('⚠️ Erro: Não há check-in registrado!', 'error');
-        document.getElementById('upload').disabled = true;
+      if (existingData.m2Total) {
+        document.getElementById('m2Total').textContent = parseFloat(existingData.m2Total).toFixed(2) + ' m²';
       }
+      
+      if (existingData.checkinTime) {
+        var checkinDate = new Date(existingData.checkinTime);
+        document.getElementById('checkinTime').textContent = checkinDate.toLocaleString('pt-BR');
+      }
+    }).catch(function(error) {
+      console.error('Erro ao carregar dados:', error);
     });
     
-    // Preview da foto selecionada
-    document.getElementById('file').addEventListener('change', function(e) {
-      selectedFile = e.target.files[0];
-      if (selectedFile) {
+    // Preview da foto
+    document.getElementById('photoInput').addEventListener('change', function(e) {
+      photoFile = e.target.files[0];
+      if (photoFile) {
         var reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('preview-img').src = e.target.result;
+        reader.onload = function(event) {
+          document.getElementById('previewImg').src = event.target.result;
           document.getElementById('preview').style.display = 'block';
-          document.getElementById('upload').disabled = false;
+          
+          // Extrair EXIF
+          EXIF.getData(photoFile, function() {
+            var exifData = EXIF.getAllTags(this);
+            photoData = {
+              datetime: exifData.DateTime || exifData.DateTimeOriginal,
+              lat: EXIF.getTag(this, 'GPSLatitude'),
+              lon: EXIF.getTag(this, 'GPSLongitude'),
+              latRef: EXIF.getTag(this, 'GPSLatitudeRef'),
+              lonRef: EXIF.getTag(this, 'GPSLongitudeRef')
+            };
+            console.log('EXIF extraído:', photoData);
+          });
         };
-        reader.readAsDataURL(selectedFile);
+        reader.readAsDataURL(photoFile);
       }
     });
     
-    // Upload e processamento
-    document.getElementById('upload').addEventListener('click', function() {
-      if (!selectedFile) {
-        showStatus('Selecione uma foto antes de enviar.', 'error');
+    function saveCheckout() {
+      var instalador = document.getElementById('instalador').value.trim();
+      
+      // Validação
+      if (!instalador) {
+        showStatus('❌ Por favor, preencha o nome do instalador.', 'error');
         return;
       }
       
-      if (!cardData.checkinTime) {
-        showStatus('⚠️ Erro: Não há check-in registrado!', 'error');
+      if (!photoFile) {
+        showStatus('❌ Por favor, tire uma foto do trabalho finalizado.', 'error');
         return;
       }
       
-      document.getElementById('upload').disabled = true;
-      document.getElementById('upload').textContent = '⏳ Processando...';
+      if (!existingData.checkinTime) {
+        showStatus('❌ Erro: Check-In não encontrado. Faça o Check-In primeiro.', 'error');
+        return;
+      }
       
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        // Tentar extrair EXIF
-        var exifData = {};
-        try {
-          exifData = EXIF.readFromBinaryFile(e.target.result);
-        } catch(err) {
-          console.log('Erro ao ler EXIF:', err);
-        }
-        
-        // Data/hora: usar EXIF ou fallback para hora atual
-        var checkoutTime;
-        if (exifData.DateTimeOriginal || exifData.DateTime) {
-          var dateStr = exifData.DateTimeOriginal || exifData.DateTime;
-          var parts = dateStr.split(' ');
-          var datePart = parts[0].replace(/:/g, '-');
-          var timePart = parts[1];
-          checkoutTime = new Date(datePart + 'T' + timePart);
-        } else {
-          checkoutTime = new Date();
-          showStatus('⚠️ Foto sem data EXIF. Usando horário atual.', 'success');
-        }
-        
-        // GPS
-        var gpsLatOut = null;
-        var gpsLonOut = null;
-        
-        if (exifData.GPSLatitude && exifData.GPSLongitude) {
-          gpsLatOut = exifData.GPSLatitude;
-          gpsLonOut = exifData.GPSLongitude;
-        }
-        
-        // Calcular produtividade
-        var checkinTime = new Date(cardData.checkinTime);
-        var hours = (checkoutTime - checkinTime) / (1000 * 60 * 60);
-        var produtividade = 0;
-        
-        if (cardData.m2Total && hours > 0) {
-          produtividade = cardData.m2Total / hours;
-        }
-        
-        // Atualizar dados
-        cardData.checkoutTime = checkoutTime.toISOString();
-        cardData.gpsLatOut = gpsLatOut;
-        cardData.gpsLonOut = gpsLonOut;
-        cardData.produtividade = produtividade;
-        cardData.horasTrabalhadas = hours;
-        cardData.lastUpdated = new Date().toISOString();
-        
-        // Mostrar resumo
-        showSummary(hours, cardData.m2Total || 0, produtividade);
-        
-        // Se não tem GPS, tentar obter do navegador
-        if (!gpsLatOut && navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            function(position) {
-              cardData.gpsLatOut = position.coords.latitude;
-              cardData.gpsLonOut = position.coords.longitude;
-              saveAndAttach(cardData);
-            },
-            function(error) {
-              console.log('Geolocalização não disponível:', error);
-              saveAndAttach(cardData);
-            }
-          );
-        } else {
-          saveAndAttach(cardData);
-        }
+      if (!existingData.m2Total) {
+        showStatus('❌ Erro: Medidas não encontradas. Registre as medidas primeiro.', 'error');
+        return;
+      }
+      
+      document.getElementById('saveBtn').disabled = true;
+      showStatus('⏳ Salvando check-out e calculando produtividade...', 'success');
+      
+      // Capturar hora atual
+      var checkoutTime = new Date().toISOString();
+      
+      // Se tiver dados EXIF, usar a hora da foto
+      if (photoData && photoData.datetime) {
+        checkoutTime = photoData.datetime;
+      }
+      
+      // Calcular horas trabalhadas
+      var checkinDate = new Date(existingData.checkinTime);
+      var checkoutDate = new Date(checkoutTime);
+      var horasTrabalhadas = (checkoutDate - checkinDate) / (1000 * 60 * 60);
+      
+      // Calcular produtividade (m²/h)
+      var m2Total = parseFloat(existingData.m2Total);
+      var produtividade = horasTrabalhadas > 0 ? m2Total / horasTrabalhadas : 0;
+      
+      // Preparar dados para salvar
+      var dataToSave = {
+        instalador: instalador, // Usar o nome editado
+        checkoutTime: checkoutTime,
+        horasTrabalhadas: horasTrabalhadas.toFixed(2),
+        produtividade: produtividade.toFixed(2)
       };
-      reader.readAsArrayBuffer(selectedFile);
-    });
-    
-    function saveAndAttach(data) {
-      t.set('card','shared','instalometroData',data).then(function(){
-        // Anexar foto ao card
-        var fileURL = URL.createObjectURL(selectedFile);
-        var timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        
-        t.attach({ 
-          url: fileURL, 
-          name: 'checkout_' + timestamp + '.jpg' 
-        }).then(function(){
-          showStatus('✅ Check-out registrado com sucesso!', 'success');
-          setTimeout(function() {
-            t.closePopup();
-          }, 2000);
-        }).catch(function(err) {
-          console.error('Erro ao anexar foto:', err);
-          showStatus('✅ Check-out registrado (foto salva localmente)', 'success');
-          setTimeout(function() {
-            t.closePopup();
-          }, 2000);
-        });
+      
+      // Salvar GPS se disponível
+      if (photoData && photoData.lat && photoData.lon) {
+        dataToSave.gpsLatCheckout = convertDMSToDD(photoData.lat, photoData.latRef);
+        dataToSave.gpsLonCheckout = convertDMSToDD(photoData.lon, photoData.lonRef);
+      }
+      
+      // Mostrar produtividade
+      showProdutividade(produtividade);
+      
+      // Fazer upload da foto
+      t.attach({
+        name: 'checkout_' + checkoutDate.toISOString() + '.jpg',
+        url: URL.createObjectURL(photoFile)
+      }).then(function() {
+        // Salvar dados no card
+        var updatedData = Object.assign({}, existingData, dataToSave);
+        return t.set('card', 'shared', 'instalometroData', updatedData);
+      }).then(function() {
+        showStatus('✅ Check-Out realizado! Produtividade: ' + produtividade.toFixed(2) + ' m²/h', 'success');
+        setTimeout(function() {
+          t.closePopup();
+        }, 2000);
+      }).catch(function(error) {
+        console.error('Erro ao salvar check-out:', error);
+        showStatus('❌ Erro ao salvar. Tente novamente.', 'error');
+        document.getElementById('saveBtn').disabled = false;
       });
     }
     
-    function showSummary(hours, m2, produtividade) {
-      document.getElementById('tempo').textContent = hours.toFixed(2) + ' horas';
-      document.getElementById('m2').textContent = m2.toFixed(2) + ' m²';
+    function showProdutividade(prod) {
+      var box = document.getElementById('produtividadeBox');
+      var value = document.getElementById('produtividadeValue');
       
-      var prodEl = document.getElementById('produtividade');
-      prodEl.textContent = produtividade.toFixed(2) + ' m²/h';
+      value.textContent = prod.toFixed(2);
       
-      // Colorir baseado na meta
-      if (produtividade >= 10) {
-        prodEl.className = 'summary-value good';
-      } else if (produtividade >= 8) {
-        prodEl.className = 'summary-value warning';
+      // Cores baseadas em metas
+      box.className = 'produtividade';
+      if (prod >= 10) {
+        box.className += ' good'; // Verde
+      } else if (prod >= 7) {
+        box.className += ' warning'; // Amarelo
       } else {
-        prodEl.className = 'summary-value bad';
+        box.className += ' bad'; // Vermelho
       }
       
-      document.getElementById('summary').style.display = 'block';
+      box.style.display = 'block';
+    }
+    
+    function convertDMSToDD(dms, ref) {
+      if (!dms || dms.length !== 3) return null;
+      var dd = dms[0] + dms[1]/60 + dms[2]/3600;
+      if (ref === 'S' || ref === 'W') dd = dd * -1;
+      return dd;
     }
     
     function showStatus(message, type) {
-      var statusEl = document.getElementById('status');
-      statusEl.textContent = message;
-      statusEl.className = 'status ' + type;
+      var statusBox = document.getElementById('statusBox');
+      statusBox.textContent = message;
+      statusBox.className = 'status ' + type;
     }
   </script>
 </body>

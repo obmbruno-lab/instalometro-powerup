@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard Consolidado - Instalômetro</title>
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 20px;
+      background: #f4f5f7;
+      min-width: 800px;
+    }
+    h2 {
+      color: #172b4d;
+      margin-top: 0;
+      font-size: 24px;
+      border-bottom: 3px solid #0079bf;
+      padding-bottom: 10px;
+    }
+    h3 {
+      color: #172b4d;
+      font-size: 18px;
+      margin-top: 25px;
+      margin-bottom: 10px;
+    }
+    .section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 3px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      color: white;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .stat-card.green {
+      background: linear-gradient(135deg, #61bd4f 0%, #5aac44 100%);
+    }
+    .stat-card.blue {
+      background: linear-gradient(135deg, #0079bf 0%, #026aa7 100%);
+    }
+    .stat-card.orange {
+      background: linear-gradient(135deg, #ff9f1a 0%, #ff8c00 100%);
+    }
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    table { 
+      border-collapse: collapse; 
+      width: 100%;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+    th, td { 
+      border: 1px solid #dfe1e6;
+      padding: 12px 8px;
+      text-align: left;
+    }
+    th { 
+      background-color: #0079bf;
+      font-weight: 600;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    td {
+      color: #172b4d;
+    }
+    tr:hover {
+      background-color: #f4f5f7;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge.good {
+      background: #61bd4f;
+      color: white;
+    }
+    .badge.warning {
+      background: #f2d600;
+      color: #172b4d;
+    }
+    .badge.bad {
+      background: #eb5a46;
+      color: white;
+    }
+    .badge.neutral {
+      background: #dfe1e6;
+      color: #172b4d;
+    }
+    .badge.pending {
+      background: #c377e0;
+      color: white;
+    }
+    .buttons { 
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button { 
+      padding: 12px 20px;
+      background: #0079bf;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #026aa7;
+    }
+    button.secondary {
+      background: #5e6c84;
+    }
+    button.secondary:hover {
+      background: #505f79;
+    }
+    .empty {
+      color: #5e6c84;
+      font-style: italic;
+      text-align: center;
+      padding: 40px 20px;
+      font-size: 16px;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #5e6c84;
+      font-size: 16px;
+    }
+    .filter-bar {
+      background: #f4f5f7;
+      padding: 15px;
+      border-radius: 3px;
+      margin-bottom: 15px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-bar label {
+      font-weight: 600;
+      color: #172b4d;
+      margin-right: 5px;
+    }
+    .filter-bar select, .filter-bar input {
+      padding: 8px 12px;
+      border: 1px solid #dfe1e6;
+      border-radius: 3px;
+      font-size: 14px;
+    }
+    .card-link {
+      color: #0079bf;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .card-link:hover {
+      text-decoration: underline;
+    }
+    .ranking {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      background: #f4f5f7;
+      padding: 12px;
+      border-radius: 3px;
+      border-left: 4px solid #0079bf;
+    }
+    .ranking-item.first {
+      border-left-color: #f2d600;
+      background: #fffbea;
+    }
+    .ranking-item.second {
+      border-left-color: #c0c0c0;
+    }
+    .ranking-item.third {
+      border-left-color: #cd7f32;
+    }
+    .ranking-position {
+      font-size: 24px;
+      font-weight: 700;
+      color: #5e6c84;
+      width: 40px;
+      text-align: center;
+    }
+    .ranking-name {
+      flex: 1;
+      font-weight: 600;
+      color: #172b4d;
+    }
+    .ranking-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0079bf;
+    }
+  </style>
+</head>
+<body>
+  <h2>📊 Dashboard Consolidado - Instalômetro</h2>
+  
+  <div id="loading" class="loading">
+    ⏳ Carregando dados de todos os cards...
+  </div>
+  
+  <div id="content" style="display:none;">
+    <!-- Estatísticas Gerais -->
+    <div class="section">
+      <h3>📈 Estatísticas Gerais</h3>
+      <div class="stats-grid" id="stats"></div>
+    </div>
+    
+    <!-- Ranking de Instaladores -->
+    <div class="section">
+      <h3>🏆 Ranking de Instaladores</h3>
+      <div class="ranking" id="ranking"></div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="section">
+      <div class="filter-bar">
+        <label>Filtrar por:</label>
+        <select id="filterStatus">
+          <option value="all">Todos os Status</option>
+          <option value="pending">Pendente</option>
+          <option value="inprogress">Em Andamento</option>
+          <option value="completed">Concluído</option>
+        </select>
+        <select id="filterInstalador">
+          <option value="all">Todos os Instaladores</option>
+        </select>
+        <button onclick="applyFilters()" class="secondary">🔍 Aplicar Filtros</button>
+        <button onclick="clearFilters()" class="secondary">🔄 Limpar Filtros</button>
+      </div>
+    </div>
+    
+    <!-- Tabela Consolidada -->
+    <div class="section">
+      <h3>📋 Todas as Instalações</h3>
+      <div style="max-height: 500px; overflow-y: auto;">
+        <table id="mainTable">
+          <thead>
+            <tr>
+              <th>Card</th>
+              <th>OS</th>
+              <th>Item</th>
+              <th>Cliente</th>
+              <th>👤 Instalador</th>
+              <th>m²</th>
+              <th>Horas</th>
+              <th>m²/h</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Botões de Ação -->
+    <div class="section">
+      <div class="buttons">
+        <button onclick="exportCSV()">💾 Exportar CSV Consolidado</button>
+        <button onclick="refresh()" class="secondary">🔄 Atualizar Dados</button>
+        <button onclick="printReport()" class="secondary">🖨️ Imprimir Relatório</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    var t = TrelloPowerUp.iframe();
+    var allCardsData = [];
+    var filteredData = [];
+    
+    // Carregar dados de todos os cards
+    function loadAllData() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('content').style.display = 'none';
+      
+      t.cards('all').then(function(cards) {
+        console.log('Total de cards no board:', cards.length);
+        
+        var promises = cards.map(function(card) {
+          return t.get(card.id, 'shared').then(function(data) {
+            if (data && (data.os || data.m2Total || data.checkinTime)) {
+              return {
+                cardId: card.id,
+                cardName: card.name,
+                cardUrl: card.url,
+                ...data
+              };
+            }
+            return null;
+          }).catch(function(error) {
+            console.error('Erro ao ler card ' + card.name + ':', error);
+            return null;
+          });
+        });
+        
+        Promise.all(promises).then(function(results) {
+          allCardsData = results.filter(function(item) { return item !== null; });
+          filteredData = allCardsData;
+          
+          console.log('Cards com dados do Instalômetro:', allCardsData.length);
+          
+          if (allCardsData.length === 0) {
+            showEmpty();
+          } else {
+            populateAll();
+          }
+          
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('content').style.display = 'block';
+        });
+      }).catch(function(error) {
+        console.error('Erro ao carregar cards:', error);
+        document.getElementById('loading').innerHTML = '<div class="empty">❌ Erro ao carregar dados. Tente novamente.</div>';
+      });
+    }
+    
+    function showEmpty() {
+      document.getElementById('stats').innerHTML = '<div class="empty">Nenhum card com dados do Instalômetro encontrado</div>';
+      document.getElementById('ranking').innerHTML = '<div class="empty">Sem dados para ranking</div>';
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="empty">Nenhuma instalação registrada ainda</td></tr>';
+    }
+    
+    function populateAll() {
+      populateStats();
+      populateRanking();
+      populateTable();
+      populateFilters();
+    }
+    
+    function populateStats() {
+      var stats = calculateStats(filteredData);
+      var html = '';
+      
+      html += '<div class="stat-card blue">';
+      html += '<div class="stat-value">' + stats.totalCards + '</div>';
+      html += '<div class="stat-label">Instalações</div>';
+      html += '</div>';
+      
+      html += '<div class="stat-card green">';
+      html += '<div class="stat-value">' + stats.totalM2.toFixed(1) + ' m²</div>';
+      html += '<div class="stat-label">Total Instalado</div>';
+      html += '</div>';
+      
+      html += '<div class="stat-card orange">';
+      html += '<div class="stat-value">' + stats.totalHoras.toFixed(1) + ' h</div>';
+      html += '<div class="stat-label">Total de Horas</div>';
+      html += '</div>';
+      
+      html += '<div class="stat-card">';
+      html += '<div class="stat-value">' + stats.mediaProdutividade.toFixed(2) + '</div>';
+      html += '<div class="stat-label">m²/h Médio</div>';
+      html += '</div>';
+      
+      html += '<div class="stat-card green">';
+      html += '<div class="stat-value">' + stats.concluidas + '</div>';
+      html += '<div class="stat-label">Concluídas</div>';
+      html += '</div>';
+      
+      html += '<div class="stat-card orange">';
+      html += '<div class="stat-value">' + stats.emAndamento + '</div>';
+      html += '<div class="stat-label">Em Andamento</div>';
+      html += '</div>';
+      
+      document.getElementById('stats').innerHTML = html;
+    }
+    
+    function calculateStats(data) {
+      var totalM2 = 0;
+      var totalHoras = 0;
+      var totalProdutividade = 0;
+      var countProdutividade = 0;
+      var concluidas = 0;
+      var emAndamento = 0;
+      
+      data.forEach(function(item) {
+        if (item.m2Total) totalM2 += parseFloat(item.m2Total);
+        if (item.horasTrabalhadas) totalHoras += parseFloat(item.horasTrabalhadas);
+        if (item.produtividade) {
+          totalProdutividade += parseFloat(item.produtividade);
+          countProdutividade++;
+        }
+        if (item.checkoutTime) {
+          concluidas++;
+        } else if (item.checkinTime) {
+          emAndamento++;
+        }
+      });
+      
+      return {
+        totalCards: data.length,
+        totalM2: totalM2,
+        totalHoras: totalHoras,
+        mediaProdutividade: countProdutividade > 0 ? totalProdutividade / countProdutividade : 0,
+        concluidas: concluidas,
+        emAndamento: emAndamento
+      };
+    }
+    
+    function populateRanking() {
+      var instaladores = {};
+      
+      filteredData.forEach(function(item) {
+        if (item.instalador && item.produtividade) {
+          if (!instaladores[item.instalador]) {
+            instaladores[item.instalador] = {
+              nome: item.instalador,
+              totalProdutividade: 0,
+              count: 0,
+              totalM2: 0
+            };
+          }
+          instaladores[item.instalador].totalProdutividade += parseFloat(item.produtividade);
+          instaladores[item.instalador].count++;
+          if (item.m2Total) {
+            instaladores[item.instalador].totalM2 += parseFloat(item.m2Total);
+          }
+        }
+      });
+      
+      var ranking = Object.values(instaladores).map(function(inst) {
+        return {
+          nome: inst.nome,
+          mediaProdutividade: inst.totalProdutividade / inst.count,
+          totalM2: inst.totalM2,
+          count: inst.count
+        };
+      }).sort(function(a, b) {
+        return b.mediaProdutividade - a.mediaProdutividade;
+      });
+      
+      var html = '';
+      if (ranking.length === 0) {
+        html = '<div class="empty">Nenhum instalador com dados de produtividade</div>';
+      } else {
+        ranking.forEach(function(item, index) {
+          var position = index + 1;
+          var className = 'ranking-item';
+          if (position === 1) className += ' first';
+          else if (position === 2) className += ' second';
+          else if (position === 3) className += ' third';
+          
+          html += '<div class="' + className + '">';
+          html += '<div class="ranking-position">' + position + 'º</div>';
+          html += '<div class="ranking-name">👤 ' + item.nome + ' <span style="color:#5e6c84;font-size:12px;">(' + item.count + ' instalações, ' + item.totalM2.toFixed(1) + ' m²)</span></div>';
+          html += '<div class="ranking-value">' + item.mediaProdutividade.toFixed(2) + ' m²/h</div>';
+          html += '</div>';
+        });
+      }
+      
+      document.getElementById('ranking').innerHTML = html;
+    }
+    
+    function populateTable() {
+      var tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+      
+      if (filteredData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">Nenhuma instalação encontrada com os filtros aplicados</td></tr>';
+        return;
+      }
+      
+      filteredData.forEach(function(item) {
+        var tr = document.createElement('tr');
+        
+        // Card Name (link)
+        var tdCard = document.createElement('td');
+        var link = document.createElement('a');
+        link.href = item.cardUrl;
+        link.target = '_blank';
+        link.className = 'card-link';
+        link.textContent = item.cardName;
+        tdCard.appendChild(link);
+        tr.appendChild(tdCard);
+        
+        // OS
+        tr.appendChild(createCell(item.os || '-'));
+        
+        // Item
+        tr.appendChild(createCell(item.item_os || '-'));
+        
+        // Cliente
+        tr.appendChild(createCell(item.cliente || '-'));
+        
+        // Instalador
+        tr.appendChild(createCell(item.instalador ? '👤 ' + item.instalador : '-'));
+        
+        // m²
+        tr.appendChild(createCell(item.m2Total ? parseFloat(item.m2Total).toFixed(2) + ' m²' : '-'));
+        
+        // Horas
+        tr.appendChild(createCell(item.horasTrabalhadas ? parseFloat(item.horasTrabalhadas).toFixed(2) + ' h' : '-'));
+        
+        // m²/h
+        var tdProd = document.createElement('td');
+        if (item.produtividade) {
+          var prod = parseFloat(item.produtividade);
+          var badge = getBadge(prod);
+          tdProd.innerHTML = badge;
+        } else {
+          tdProd.textContent = '-';
+        }
+        tr.appendChild(tdProd);
+        
+        // Status
+        var tdStatus = document.createElement('td');
+        var status = getStatus(item);
+        tdStatus.innerHTML = status;
+        tr.appendChild(tdStatus);
+        
+        tbody.appendChild(tr);
+      });
+    }
+    
+    function createCell(text) {
+      var td = document.createElement('td');
+      td.textContent = text;
+      return td;
+    }
+    
+    function getBadge(prod) {
+      var className = 'badge ';
+      if (prod >= 10) className += 'good';
+      else if (prod >= 7) className += 'warning';
+      else className += 'bad';
+      return '<span class="' + className + '">' + prod.toFixed(2) + ' m²/h</span>';
+    }
+    
+    function getStatus(item) {
+      if (item.checkoutTime) {
+        return '<span class="badge good">✅ Concluído</span>';
+      } else if (item.checkinTime) {
+        return '<span class="badge warning">⏱️ Em Andamento</span>';
+      } else if (item.m2Total) {
+        return '<span class="badge pending">📋 Medido</span>';
+      } else if (item.os) {
+        return '<span class="badge neutral">📝 Identificado</span>';
+      }
+      return '<span class="badge neutral">⚪ Pendente</span>';
+    }
+    
+    function populateFilters() {
+      var instaladores = new Set();
+      allCardsData.forEach(function(item) {
+        if (item.instalador) instaladores.add(item.instalador);
+      });
+      
+      var select = document.getElementById('filterInstalador');
+      select.innerHTML = '<option value="all">Todos os Instaladores</option>';
+      Array.from(instaladores).sort().forEach(function(inst) {
+        var option = document.createElement('option');
+        option.value = inst;
+        option.textContent = '👤 ' + inst;
+        select.appendChild(option);
+      });
+    }
+    
+    function applyFilters() {
+      var statusFilter = document.getElementById('filterStatus').value;
+      var instaladorFilter = document.getElementById('filterInstalador').value;
+      
+      filteredData = allCardsData.filter(function(item) {
+        // Filtro de status
+        if (statusFilter !== 'all') {
+          var itemStatus = '';
+          if (item.checkoutTime) itemStatus = 'completed';
+          else if (item.checkinTime) itemStatus = 'inprogress';
+          else itemStatus = 'pending';
+          
+          if (itemStatus !== statusFilter) return false;
+        }
+        
+        // Filtro de instalador
+        if (instaladorFilter !== 'all') {
+          if (item.instalador !== instaladorFilter) return false;
+        }
+        
+        return true;
+      });
+      
+      populateAll();
+      
+      t.alert({
+        message: '🔍 Filtros aplicados! ' + filteredData.length + ' instalações encontradas.',
+        duration: 3
+      });
+    }
+    
+    function clearFilters() {
+      document.getElementById('filterStatus').value = 'all';
+      document.getElementById('filterInstalador').value = 'all';
+      filteredData = allCardsData;
+      populateAll();
+      
+      t.alert({
+        message: '🔄 Filtros limpos!',
+        duration: 2
+      });
+    }
+    
+    function exportCSV() {
+      var csv = 'Card,OS,Item,Cliente,Instalador,Altura (m),Largura (m),Quantidade,m² Unitário,m² Total,Check-in,Check-out,Horas Trabalhadas,Produtividade (m²/h),Status,URL\n';
+      
+      filteredData.forEach(function(item) {
+        var status = '';
+        if (item.checkoutTime) status = 'Concluído';
+        else if (item.checkinTime) status = 'Em Andamento';
+        else if (item.m2Total) status = 'Medido';
+        else if (item.os) status = 'Identificado';
+        else status = 'Pendente';
+        
+        csv += '"' + (item.cardName || '') + '",';
+        csv += '"' + (item.os || '') + '",';
+        csv += '"' + (item.item_os || '') + '",';
+        csv += '"' + (item.cliente || '') + '",';
+        csv += '"' + (item.instalador || '') + '",';
+        csv += '"' + (item.altura || '') + '",';
+        csv += '"' + (item.largura || '') + '",';
+        csv += '"' + (item.quantidade || '') + '",';
+        csv += '"' + (item.m2Unit ? parseFloat(item.m2Unit).toFixed(2) : '') + '",';
+        csv += '"' + (item.m2Total ? parseFloat(item.m2Total).toFixed(2) : '') + '",';
+        csv += '"' + (item.checkinTime || '') + '",';
+        csv += '"' + (item.checkoutTime || '') + '",';
+        csv += '"' + (item.horasTrabalhadas ? parseFloat(item.horasTrabalhadas).toFixed(2) : '') + '",';
+        csv += '"' + (item.produtividade ? parseFloat(item.produtividade).toFixed(2) : '') + '",';
+        csv += '"' + status + '",';
+        csv += '"' + (item.cardUrl || '') + '"\n';
+      });
+      
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      var timestamp = new Date().toISOString().split('T')[0];
+      a.download = 'instalometro_consolidado_' + timestamp + '.csv';
+      a.click();
+      
+      t.alert({
+        message: '✅ CSV consolidado exportado com sucesso! (' + filteredData.length + ' instalações)',
+        duration: 4
+      });
+    }
+    
+    function refresh() {
+      loadAllData();
+      t.alert({
+        message: '🔄 Dados atualizados!',
+        duration: 2
+      });
+    }
+    
+    function printReport() {
+      window.print();
+    }
+    
+    // Carregar dados ao abrir
+    loadAllData();
+  </script>
+</body>
+</html>
+

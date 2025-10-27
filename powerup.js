@@ -1,7 +1,7 @@
 /* 
- * Instalômetro Trello Power-Up - Versão 1.3
+ * Instalômetro Trello Power-Up - Versão 1.4 (Híbrido)
  * Indústria Visual
- * Com seção personalizada no card para melhor visibilidade
+ * Seção visual + Botões funcionais
  */
 
 // Inicialização do Power-Up
@@ -12,10 +12,72 @@ TrelloPowerUp.initialize({
       icon: 'https://cdn-icons-png.flaticon.com/512/2541/2541988.png',
       content: {
         type: 'iframe',
-        url: t.signUrl('./card_section.html'),
-        height: 280
+        url: t.signUrl('./card_section_status.html'),
+        height: 120
       }
     };
+  },
+  'card-buttons': function(t, options) {
+    return [{
+      icon: 'https://cdn-icons-png.flaticon.com/512/2541/2541988.png',
+      text: '📋 Identificação',
+      callback: function(t) {
+        return t.popup({ 
+          title: 'Identificação da Instalação', 
+          url: './id_modal.html', 
+          height: 350 
+        });
+      }
+    }, {
+      icon: 'https://cdn-icons-png.flaticon.com/512/2541/2541988.png',
+      text: '📏 Medidas',
+      callback: function(t) {
+        return t.popup({ 
+          title: 'Medidas da Instalação', 
+          url: './measures_modal.html', 
+          height: 400 
+        });
+      }
+    }, {
+      icon: 'https://cdn-icons-png.flaticon.com/512/2541/2541988.png',
+      text: '✅ Check-In',
+      callback: function(t) {
+        return t.popup({ 
+          title: 'Check-In - Início da Instalação', 
+          url: './checkin_modal.html', 
+          height: 350 
+        });
+      }
+    }, {
+      icon: 'https://cdn-icons-png.flaticon.com/512/2541/2541988.png',
+      text: '🏁 Check-Out',
+      callback: function(t) {
+        return t.get('card', 'shared', 'instalometroData', {})
+          .then(function(data) {
+            if (!data.checkinTime) {
+              return t.alert({
+                message: '⚠️ Você precisa fazer Check-In antes do Check-Out!',
+                duration: 5
+              });
+            }
+            return t.popup({ 
+              title: 'Check-Out - Fim da Instalação', 
+              url: './checkout_modal.html', 
+              height: 350 
+            });
+          });
+      }
+    }, {
+      icon: 'https://cdn-icons-png.flaticon.com/512/2541/2541988.png',
+      text: '📊 Dashboard',
+      callback: function(t) {
+        return t.modal({ 
+          title: 'Dashboard Instalômetro', 
+          url: './dashboard.html',
+          height: 600
+        });
+      }
+    }];
   },
   'card-badges': function(t, options) {
     return t.get('card', 'shared', 'instalometroData', {})

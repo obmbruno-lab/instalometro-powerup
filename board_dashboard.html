@@ -276,6 +276,7 @@
               <th>Item</th>
               <th>Cliente</th>
               <th>👤 Instalador</th>
+              <th>🧰 Materiais</th>
               <th>m²</th>
               <th>Horas</th>
               <th>m²/h</th>
@@ -518,6 +519,9 @@
         // Instalador
         tr.appendChild(createCell(item.instalador ? '👤 ' + item.instalador : '-'));
         
+        // Materiais
+        tr.appendChild(createCell(item.materiais || '-'));
+        
         // m²
         tr.appendChild(createCell(item.m2Total ? parseFloat(item.m2Total).toFixed(2) + ' m²' : '-'));
         
@@ -632,7 +636,7 @@
     }
     
     function exportCSV() {
-      var csv = 'Card,OS,Item,Cliente,Instalador,Altura (m),Largura (m),Quantidade,m² Unitário,m² Total,Check-in,Check-out,Horas Trabalhadas,Produtividade (m²/h),Status,URL\n';
+      var csv = 'Card,OS,Item,Cliente,Instalador,Materiais,Altura (m),Largura (m),Quantidade,m² Unitário,m² Total,Check-in,Check-out,Horas Trabalhadas,Produtividade (m²/h),Status,URL\n';
       
       filteredData.forEach(function(item) {
         var status = '';
@@ -647,6 +651,7 @@
         csv += '"' + (item.item_os || '') + '",';
         csv += '"' + (item.cliente || '') + '",';
         csv += '"' + (item.instalador || '') + '",';
+        csv += '"' + (item.materiais || '') + '",';
         csv += '"' + (item.altura || '') + '",';
         csv += '"' + (item.largura || '') + '",';
         csv += '"' + (item.quantidade || '') + '",';

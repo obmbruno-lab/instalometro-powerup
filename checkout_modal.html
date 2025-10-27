@@ -45,6 +45,22 @@
       border-color: #0079bf;
       box-shadow: 0 0 0 3px rgba(0,121,191,0.1);
     }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #dfe1e6;
+      border-radius: 3px;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      resize: vertical;
+      min-height: 60px;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #0079bf;
+      box-shadow: 0 0 0 3px rgba(0,121,191,0.1);
+    }
     .instalador-hint {
       font-size: 11px;
       color: #5e6c84;
@@ -186,6 +202,12 @@
     💡 Você pode editar o nome do instalador se necessário (ex: se quem fez check-in foi diferente de quem instalou)
   </div>
   
+  <label>🧰 Materiais Utilizados</label>
+  <textarea id="materiais" placeholder="Ex: Lona, Adesivo, Parafusos, Cola, etc."></textarea>
+  <div class="instalador-hint">
+    💡 Liste os materiais que foram utilizados na instalação
+  </div>
+  
   <label>📸 Foto do Local (Após a Instalação)</label>
   <input type="file" id="photoInput" accept="image/*" capture="environment">
   <div class="instalador-hint">
@@ -219,6 +241,11 @@
       if (existingData.instalador) {
         document.getElementById('instaladorAtual').textContent = existingData.instalador;
         document.getElementById('instalador').value = existingData.instalador;
+      }
+      
+      // Pré-preencher materiais se já existir
+      if (existingData.materiais) {
+        document.getElementById('materiais').value = existingData.materiais;
       }
       
       if (existingData.m2Total) {
@@ -261,6 +288,7 @@
     
     function saveCheckout() {
       var instalador = document.getElementById('instalador').value.trim();
+      var materiais = document.getElementById('materiais').value.trim();
       
       // Validação
       if (!instalador) {
@@ -308,7 +336,8 @@
         instalador: instalador, // Usar o nome editado
         checkoutTime: checkoutTime,
         horasTrabalhadas: horasTrabalhadas.toFixed(2),
-        produtividade: produtividade.toFixed(2)
+        produtividade: produtividade.toFixed(2),
+        materiais: materiais || existingData.materiais || ''
       };
       
       // Salvar GPS se disponível

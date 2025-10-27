@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', sans-serif;
+      padding: 12px;
+      margin: 0;
+      background: #fff;
+    }
+    .status-card {
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      border: 2px solid;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 12px;
+    }
+    .status-card.empty {
+      background: #f4f5f7;
+      border-color: #dfe1e6;
+      color: #5e6c84;
+    }
+    .status-card.identified {
+      background: #e3fcef;
+      border-color: #61bd4f;
+      color: #216e4e;
+    }
+    .status-card.measured {
+      background: #f3e5f5;
+      border-color: #c377e0;
+      color: #5e4db2;
+    }
+    .status-card.in-progress {
+      background: #fff4e6;
+      border-color: #f2d600;
+      color: #974f0c;
+    }
+    .status-card.complete {
+      background: #e3fcef;
+      border-color: #61bd4f;
+      color: #216e4e;
+    }
+    .status-icon {
+      font-size: 32px;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .instalador-badge {
+      display: inline-block;
+      background: #0079bf;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    .status-details {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 12px;
+      background: #f4f5f7;
+      border-radius: 8px;
+    }
+    .status-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 4px;
+      background: #fff;
+      border-radius: 6px;
+    }
+    .status-label {
+      color: #5e6c84;
+      font-weight: 600;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .status-value {
+      color: #172b4d;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .help-text {
+      text-align: center;
+      color: #5e6c84;
+      font-size: 12px;
+      margin-top: 8px;
+      font-weight: 500;
+    }
+    @media (max-width: 500px) {
+      .status-details {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Status Card -->
+  <div class="status-card empty" id="main-status">
+    <span class="status-icon">📋</span>
+    <div>Use os botões na lateral direita</div>
+  </div>
+
+  <!-- Status Details (hidden initially) -->
+  <div class="status-details" id="status-details" style="display: none;">
+    <div class="status-item">
+      <span class="status-label">OS</span>
+      <span class="status-value" id="os-value">-</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">m²</span>
+      <span class="status-value" id="m2-value">-</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Tempo</span>
+      <span class="status-value" id="time-value">-</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">m²/h</span>
+      <span class="status-value" id="prod-value">-</span>
+    </div>
+  </div>
+
+  <div class="help-text" id="help-text">
+    💡 Dica: Use os botões do Power-Up na lateral direita
+  </div>
+
+  <script>
+    var t = TrelloPowerUp.iframe();
+
+    function updateStatus() {
+      t.get('card', 'shared', 'instalometroData', {})
+        .then(function(data) {
+          var mainStatus = document.getElementById('main-status');
+          var statusDetails = document.getElementById('status-details');
+          var helpText = document.getElementById('help-text');
+          
+          var hasId = data.os && data.item_os && data.cliente;
+          var hasMeasures = data.m2Total > 0;
+          var hasCheckin = !!data.checkinTime;
+          var hasCheckout = !!data.checkoutTime;
+          var instaladorBadge = data.instalador ? '<div class="instalador-badge">👤 ' + data.instalador + '</div>' : '';
+
+          if (hasCheckout) {
+            mainStatus.className = 'status-card complete';
+            mainStatus.innerHTML = '<span class="status-icon">✅</span><div>Instalação Concluída!</div>' + instaladorBadge;
+            statusDetails.style.display = 'grid';
+            helpText.style.display = 'none';
+            
+            document.getElementById('os-value').textContent = data.os || '-';
+            document.getElementById('m2-value').textContent = data.m2Total ? data.m2Total.toFixed(2) : '-';
+            document.getElementById('time-value').textContent = data.horasTrabalhadas ? data.horasTrabalhadas.toFixed(1) + 'h' : '-';
+            document.getElementById('prod-value').textContent = data.produtividade ? data.produtividade.toFixed(2) : '-';
+            
+          } else if (hasCheckin) {
+            mainStatus.className = 'status-card in-progress';
+            var elapsed = Math.floor((new Date() - new Date(data.checkinTime)) / 1000 / 60);
+            var hours = Math.floor(elapsed / 60);
+            var mins = elapsed % 60;
+            var timeStr = hours > 0 ? hours + 'h ' + mins + 'min' : mins + 'min';
+            mainStatus.innerHTML = '<span class="status-icon">⏱️</span><div>Em andamento há ' + timeStr + '</div>' + instaladorBadge;
+            statusDetails.style.display = 'grid';
+            helpText.style.display = 'none';
+            
+            document.getElementById('os-value').textContent = data.os || '-';
+            document.getElementById('m2-value').textContent = data.m2Total ? data.m2Total.toFixed(2) : '-';
+            document.getElementById('time-value').textContent = timeStr;
+            document.getElementById('prod-value').textContent = '-';
+            
+          } else if (hasMeasures) {
+            mainStatus.className = 'status-card measured';
+            mainStatus.innerHTML = '<span class="status-icon">📐</span><div>Medidas registradas: ' + data.m2Total.toFixed(2) + ' m²</div>';
+            statusDetails.style.display = 'grid';
+            helpText.textContent = '💡 Próximo passo: Fazer Check-In';
+            
+            document.getElementById('os-value').textContent = data.os || '-';
+            document.getElementById('m2-value').textContent = data.m2Total.toFixed(2);
+            document.getElementById('time-value').textContent = '-';
+            document.getElementById('prod-value').textContent = '-';
+            
+          } else if (hasId) {
+            mainStatus.className = 'status-card identified';
+            mainStatus.innerHTML = '<span class="status-icon">📋</span><div>OS ' + data.os + ' identificada</div>';
+            statusDetails.style.display = 'grid';
+            helpText.textContent = '💡 Próximo passo: Registrar Medidas';
+            
+            document.getElementById('os-value').textContent = data.os;
+            document.getElementById('m2-value').textContent = '-';
+            document.getElementById('time-value').textContent = '-';
+            document.getElementById('prod-value').textContent = '-';
+            
+          } else {
+            mainStatus.className = 'status-card empty';
+            mainStatus.innerHTML = '<span class="status-icon">📋</span><div>Use os botões na lateral direita</div>';
+            statusDetails.style.display = 'none';
+            helpText.textContent = '💡 Dica: Comece pela Identificação';
+          }
+        });
+    }
+
+    // Atualizar status inicial
+    updateStatus();
+
+    // Atualizar status a cada 30 segundos
+    setInterval(updateStatus, 30000);
+
+    // Escutar mudanças
+    t.render(function() {
+      updateStatus();
+    });
+  </script>
+</body>
+</html>
+

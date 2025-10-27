@@ -24,6 +24,16 @@
       color: #172b4d;
       margin-bottom: 15px;
     }
+    .instalador-box {
+      background: #d4edda;
+      padding: 12px;
+      border-radius: 3px;
+      font-size: 14px;
+      color: #155724;
+      margin-bottom: 15px;
+      font-weight: 600;
+      border-left: 4px solid #61bd4f;
+    }
     .warning {
       background: #fff3cd;
       padding: 10px;
@@ -96,6 +106,11 @@
 </head>
 <body>
   <h3>✅ Check-In - Início da Instalação</h3>
+  
+  <div class="instalador-box" id="instalador-info">
+    👤 Carregando instalador...
+  </div>
+  
   <div class="info">
     Tire uma foto do local antes de iniciar a instalação. A data/hora e localização serão capturadas automaticamente.
   </div>
@@ -116,6 +131,17 @@
   <script>
     var t = TrelloPowerUp.iframe();
     var selectedFile = null;
+    var currentMember = null;
+    
+    // Capturar membro atual (instalador)
+    t.member('all').then(function(member) {
+      currentMember = member;
+      document.getElementById('instalador-info').innerHTML = 
+        '👤 <strong>Instalador:</strong> ' + member.fullName;
+    }).catch(function() {
+      document.getElementById('instalador-info').innerHTML = 
+        '👤 <strong>Instalador:</strong> Não identificado';
+    });
     
     // Verificar se já existe check-in
     t.get('card','shared','instalometroData',{}).then(function(data){
@@ -150,99 +176,76 @@
       
       var reader = new FileReader();
       reader.onload = function(e) {
-        // Tentar extrair EXIF
-        var exifData = {};
-        try {
-          exifData = EXIF.readFromBinaryFile(e.target.result);
-        } catch(err) {
-          console.log('Erro ao ler EXIF:', err);
-        }
-        
-        // Data/hora: usar EXIF ou fallback para hora atual
-        var checkinTime;
-        if (exifData.DateTimeOriginal || exifData.DateTime) {
-          var dateStr = exifData.DateTimeOriginal || exifData.DateTime;
-          // Formato EXIF: "2024:10:25 14:30:00"
-          var parts = dateStr.split(' ');
-          var datePart = parts[0].replace(/:/g, '-');
-          var timePart = parts[1];
-          checkinTime = new Date(datePart + 'T' + timePart);
-        } else {
-          // Fallback: hora atual
-          checkinTime = new Date();
-          showStatus('⚠️ Foto sem data EXIF. Usando horário atual.', 'success');
-        }
-        
-        // GPS: tentar extrair ou usar geolocalização do navegador
-        var gpsLat = null;
-        var gpsLon = null;
-        
-        if (exifData.GPSLatitude && exifData.GPSLongitude) {
-          gpsLat = exifData.GPSLatitude;
-          gpsLon = exifData.GPSLongitude;
-        }
-        
-        // Salvar dados
-        t.get('card','shared','instalometroData',{}).then(function(data){
-          data = data || {};
-          data.checkinTime = checkinTime.toISOString();
-          data.gpsLat = gpsLat;
-          data.gpsLon = gpsLon;
-          data.lastUpdated = new Date().toISOString();
-          
-          // Se não tem GPS, tentar obter do navegador
-          if (!gpsLat && navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              function(position) {
-                data.gpsLat = position.coords.latitude;
-                data.gpsLon = position.coords.longitude;
-                saveAndAttach(data);
-              },
-              function(error) {
-                console.log('Geolocalização não disponível:', error);
-                saveAndAttach(data);
+        var img = new Image();
+        img.onload = function() {
+          EXIF.getData(img, function() {
+            var checkinTime = new Date().toISOString();
+            var gpsData = null;
+            
+            // Tentar extrair dados EXIF
+            var exifTime = EXIF.getTag(this, 'DateTime') || EXIF.getTag(this, 'DateTimeOriginal');
+            if (exifTime) {
+              try {
+                var parts = exifTime.split(' ');
+                var dateParts = parts[0].split(':');
+                var timeParts = parts[1].split(':');
+                checkinTime = new Date(dateParts[0], dateParts[1]-1, dateParts[2], timeParts[0], timeParts[1], timeParts[2]).toISOString();
+              } catch(e) {
+                console.log('Erro ao processar data EXIF, usando hora atual');
               }
-            );
-          } else {
-            saveAndAttach(data);
-          }
-        });
+            }
+            
+            // Extrair GPS
+            var lat = EXIF.getTag(this, 'GPSLatitude');
+            var lon = EXIF.getTag(this, 'GPSLongitude');
+            var latRef = EXIF.getTag(this, 'GPSLatitudeRef');
+            var lonRef = EXIF.getTag(this, 'GPSLongitudeRef');
+            
+            if (lat && lon) {
+              var latDec = lat[0] + lat[1]/60 + lat[2]/3600;
+              var lonDec = lon[0] + lon[1]/60 + lon[2]/3600;
+              if (latRef === 'S') latDec = -latDec;
+              if (lonRef === 'W') lonDec = -lonDec;
+              gpsData = {lat: latDec, lon: lonDec};
+            }
+            
+            // Fazer upload da foto
+            t.attach({
+              name: 'Check-In - ' + new Date(checkinTime).toLocaleString('pt-BR'),
+              url: e.target.result
+            }).then(function() {
+              // Salvar dados
+              return t.get('card', 'shared', 'instalometroData', {});
+            }).then(function(instalometroData) {
+              instalometroData.checkinTime = checkinTime;
+              instalometroData.checkinGPS = gpsData;
+              instalometroData.instalador = currentMember ? currentMember.fullName : 'Desconhecido';
+              instalometroData.instaladorUsername = currentMember ? currentMember.username : 'unknown';
+              instalometroData.instaladorId = currentMember ? currentMember.id : null;
+              
+              return t.set('card', 'shared', 'instalometroData', instalometroData);
+            }).then(function() {
+              showStatus('✅ Check-in registrado com sucesso!', 'success');
+              document.getElementById('upload').textContent = '✅ Check-In Registrado';
+              setTimeout(function() {
+                t.closePopup();
+              }, 1500);
+            }).catch(function(error) {
+              showStatus('❌ Erro ao registrar check-in: ' + error, 'error');
+              document.getElementById('upload').disabled = false;
+              document.getElementById('upload').textContent = '📸 Registrar Check-In';
+            });
+          });
+        };
+        img.src = e.target.result;
       };
-      reader.readAsArrayBuffer(selectedFile);
+      reader.readAsDataURL(selectedFile);
     });
     
-    function saveAndAttach(data) {
-      t.set('card','shared','instalometroData',data).then(function(){
-        // Anexar foto ao card
-        var formData = new FormData();
-        formData.append('file', selectedFile);
-        
-        // Criar URL temporário para anexo
-        var fileURL = URL.createObjectURL(selectedFile);
-        var timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        
-        t.attach({ 
-          url: fileURL, 
-          name: 'checkin_' + timestamp + '.jpg' 
-        }).then(function(){
-          showStatus('✅ Check-in registrado com sucesso!', 'success');
-          setTimeout(function() {
-            t.closePopup();
-          }, 1500);
-        }).catch(function(err) {
-          console.error('Erro ao anexar foto:', err);
-          showStatus('✅ Check-in registrado (foto salva localmente)', 'success');
-          setTimeout(function() {
-            t.closePopup();
-          }, 1500);
-        });
-      });
-    }
-    
     function showStatus(message, type) {
-      var statusEl = document.getElementById('status');
-      statusEl.textContent = message;
-      statusEl.className = 'status ' + type;
+      var status = document.getElementById('status');
+      status.textContent = message;
+      status.className = 'status ' + type;
     }
   </script>
 </body>

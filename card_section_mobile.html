@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', sans-serif;
+      padding: 16px;
+      margin: 0;
+      background: #fff;
+    }
+    .instalometro-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .status-card {
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      border: 2px solid;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .status-card.empty {
+      background: #f4f5f7;
+      border-color: #dfe1e6;
+      color: #5e6c84;
+    }
+    .status-card.identified {
+      background: #e3fcef;
+      border-color: #61bd4f;
+      color: #216e4e;
+    }
+    .status-card.measured {
+      background: #f3e5f5;
+      border-color: #c377e0;
+      color: #5e4db2;
+    }
+    .status-card.in-progress {
+      background: #fff4e6;
+      border-color: #f2d600;
+      color: #974f0c;
+    }
+    .status-card.complete {
+      background: #e3fcef;
+      border-color: #61bd4f;
+      color: #216e4e;
+    }
+    .status-icon {
+      font-size: 28px;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .instalador-badge {
+      display: inline-block;
+      background: #0079bf;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 20px 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      min-height: 90px;
+      touch-action: manipulation;
+    }
+    .action-btn:active {
+      transform: scale(0.95);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .action-btn .icon {
+      font-size: 32px;
+    }
+    .action-btn.primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    .action-btn.success {
+      background: linear-gradient(135deg, #61bd4f 0%, #5aac44 100%);
+      color: #fff;
+    }
+    .action-btn.info {
+      background: linear-gradient(135deg, #0079bf 0%, #026aa7 100%);
+      color: #fff;
+    }
+    .action-btn.warning {
+      background: linear-gradient(135deg, #f2d600 0%, #e6c200 100%);
+      color: #333;
+    }
+    .action-btn.danger {
+      background: linear-gradient(135deg, #eb5a46 0%, #cf513d 100%);
+      color: #fff;
+    }
+    .action-btn.full-width {
+      grid-column: 1 / -1;
+    }
+    .status-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 12px;
+      background: #f4f5f7;
+      border-radius: 8px;
+    }
+    .status-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px;
+      background: #fff;
+      border-radius: 6px;
+    }
+    .status-label {
+      color: #5e6c84;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .status-value {
+      color: #172b4d;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    @media (max-width: 400px) {
+      body {
+        padding: 12px;
+      }
+      .button-grid {
+        gap: 10px;
+      }
+      .action-btn {
+        padding: 16px 8px;
+        min-height: 80px;
+        font-size: 13px;
+      }
+      .action-btn .icon {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="instalometro-section">
+    <!-- Status Card -->
+    <div class="status-card empty" id="main-status">
+      <span class="status-icon">📋</span>
+      <div>Toque nos botões abaixo</div>
+    </div>
+
+    <!-- Status Details (hidden initially) -->
+    <div class="status-details" id="status-details" style="display: none;">
+      <div class="status-item">
+        <span class="status-label">OS</span>
+        <span class="status-value" id="os-value">-</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">m²</span>
+        <span class="status-value" id="m2-value">-</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Tempo</span>
+        <span class="status-value" id="time-value">-</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">m²/h</span>
+        <span class="status-value" id="prod-value">-</span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="button-grid">
+      <button class="action-btn primary" id="btn-identificacao">
+        <span class="icon">📋</span>
+        <span>Identificação</span>
+      </button>
+      <button class="action-btn info" id="btn-medidas">
+        <span class="icon">📏</span>
+        <span>Medidas</span>
+      </button>
+      <button class="action-btn success" id="btn-checkin">
+        <span class="icon">✅</span>
+        <span>Check-In</span>
+      </button>
+      <button class="action-btn danger" id="btn-checkout">
+        <span class="icon">🏁</span>
+        <span>Check-Out</span>
+      </button>
+      <button class="action-btn warning full-width" id="btn-dashboard">
+        <span class="icon">📊</span>
+        <span>Ver Dashboard Completo</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    var t = TrelloPowerUp.iframe();
+
+    function updateStatus() {
+      t.get('card', 'shared', 'instalometroData', {})
+        .then(function(data) {
+          var mainStatus = document.getElementById('main-status');
+          var statusDetails = document.getElementById('status-details');
+          
+          var hasId = data.os && data.item_os && data.cliente;
+          var hasMeasures = data.m2Total > 0;
+          var hasCheckin = !!data.checkinTime;
+          var hasCheckout = !!data.checkoutTime;
+          var instaladorBadge = data.instalador ? '<div class="instalador-badge">👤 ' + data.instalador + '</div>' : '';
+
+          if (hasCheckout) {
+            mainStatus.className = 'status-card complete';
+            mainStatus.innerHTML = '<span class="status-icon">✅</span><div>Instalação Concluída!</div>' + instaladorBadge;
+            statusDetails.style.display = 'grid';
+            
+            document.getElementById('os-value').textContent = data.os || '-';
+            document.getElementById('m2-value').textContent = data.m2Total ? data.m2Total.toFixed(2) : '-';
+            document.getElementById('time-value').textContent = data.horasTrabalhadas ? data.horasTrabalhadas.toFixed(1) + 'h' : '-';
+            document.getElementById('prod-value').textContent = data.produtividade ? data.produtividade.toFixed(2) : '-';
+            
+          } else if (hasCheckin) {
+            mainStatus.className = 'status-card in-progress';
+            var elapsed = Math.floor((new Date() - new Date(data.checkinTime)) / 1000 / 60);
+            var hours = Math.floor(elapsed / 60);
+            var mins = elapsed % 60;
+            var timeStr = hours > 0 ? hours + 'h ' + mins + 'min' : mins + 'min';
+            mainStatus.innerHTML = '<span class="status-icon">⏱️</span><div>Em andamento há ' + timeStr + '</div>' + instaladorBadge;
+            statusDetails.style.display = 'grid';
+            
+            document.getElementById('os-value').textContent = data.os || '-';
+            document.getElementById('m2-value').textContent = data.m2Total ? data.m2Total.toFixed(2) : '-';
+            document.getElementById('time-value').textContent = timeStr;
+            document.getElementById('prod-value').textContent = '-';
+            
+          } else if (hasMeasures) {
+            mainStatus.className = 'status-card measured';
+            mainStatus.innerHTML = '<span class="status-icon">📐</span><div>Medidas: ' + data.m2Total.toFixed(2) + ' m²</div>';
+            statusDetails.style.display = 'grid';
+            
+            document.getElementById('os-value').textContent = data.os || '-';
+            document.getElementById('m2-value').textContent = data.m2Total.toFixed(2);
+            document.getElementById('time-value').textContent = '-';
+            document.getElementById('prod-value').textContent = '-';
+            
+          } else if (hasId) {
+            mainStatus.className = 'status-card identified';
+            mainStatus.innerHTML = '<span class="status-icon">📋</span><div>OS ' + data.os + '</div>';
+            statusDetails.style.display = 'grid';
+            
+            document.getElementById('os-value').textContent = data.os;
+            document.getElementById('m2-value').textContent = '-';
+            document.getElementById('time-value').textContent = '-';
+            document.getElementById('prod-value').textContent = '-';
+            
+          } else {
+            mainStatus.className = 'status-card empty';
+            mainStatus.innerHTML = '<span class="status-icon">📋</span><div>Toque nos botões abaixo</div>';
+            statusDetails.style.display = 'none';
+          }
+        });
+    }
+
+    // Botão Identificação
+    document.getElementById('btn-identificacao').addEventListener('click', function() {
+      t.popup({
+        title: 'Identificação da Instalação',
+        url: './id_modal.html',
+        height: 350
+      }).then(function() {
+        updateStatus();
+      });
+    });
+
+    // Botão Medidas
+    document.getElementById('btn-medidas').addEventListener('click', function() {
+      t.popup({
+        title: 'Medidas da Instalação',
+        url: './measures_modal.html',
+        height: 400
+      }).then(function() {
+        updateStatus();
+      });
+    });
+
+    // Botão Check-In
+    document.getElementById('btn-checkin').addEventListener('click', function() {
+      t.popup({
+        title: 'Check-In - Início da Instalação',
+        url: './checkin_modal.html',
+        height: 400
+      }).then(function() {
+        updateStatus();
+      });
+    });
+
+    // Botão Check-Out
+    document.getElementById('btn-checkout').addEventListener('click', function() {
+      t.get('card', 'shared', 'instalometroData', {})
+        .then(function(data) {
+          if (!data.checkinTime) {
+            t.alert({
+              message: '⚠️ Você precisa fazer Check-In antes do Check-Out!',
+              duration: 5
+            });
+            return;
+          }
+          t.popup({
+            title: 'Check-Out - Fim da Instalação',
+            url: './checkout_modal.html',
+            height: 350
+          }).then(function() {
+            updateStatus();
+          });
+        });
+    });
+
+    // Botão Dashboard
+    document.getElementById('btn-dashboard').addEventListener('click', function() {
+      t.modal({
+        title: 'Dashboard Instalômetro',
+        url: './dashboard.html',
+        height: 600
+      });
+    });
+
+    // Atualizar status inicial
+    updateStatus();
+
+    // Atualizar status a cada 30 segundos
+    setInterval(updateStatus, 30000);
+
+    // Escutar mudanças
+    t.render(function() {
+      updateStatus();
+    });
+  </script>
+</body>
+</html>
+

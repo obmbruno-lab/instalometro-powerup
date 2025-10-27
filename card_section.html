@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', sans-serif;
+      padding: 12px;
+      margin: 0;
+      background: #fff;
+    }
+    .instalometro-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .instalometro-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 12px;
+      border: 1px solid #dfe1e6;
+      border-radius: 3px;
+      background: #fff;
+      color: #172b4d;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .instalometro-btn:hover {
+      background: #f4f5f7;
+      border-color: #091e4221;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .instalometro-btn:active {
+      background: #e4e6ea;
+    }
+    .instalometro-btn.primary {
+      background: #0079bf;
+      color: #fff;
+      border-color: #0079bf;
+    }
+    .instalometro-btn.primary:hover {
+      background: #026aa7;
+      border-color: #026aa7;
+    }
+    .instalometro-btn.success {
+      background: #61bd4f;
+      color: #fff;
+      border-color: #61bd4f;
+    }
+    .instalometro-btn.success:hover {
+      background: #5aac44;
+      border-color: #5aac44;
+    }
+    .instalometro-btn.danger {
+      background: #eb5a46;
+      color: #fff;
+      border-color: #eb5a46;
+    }
+    .instalometro-btn.danger:hover {
+      background: #cf513d;
+      border-color: #cf513d;
+    }
+    .instalometro-btn.full-width {
+      grid-column: 1 / -1;
+    }
+    .status-info {
+      padding: 8px;
+      background: #f4f5f7;
+      border-radius: 3px;
+      font-size: 12px;
+      color: #5e6c84;
+      text-align: center;
+    }
+    .status-info.complete {
+      background: #e3fcef;
+      color: #216e4e;
+    }
+    .status-info.warning {
+      background: #fff4e6;
+      color: #974f0c;
+    }
+  </style>
+</head>
+<body>
+  <div class="instalometro-section">
+    <div class="button-grid">
+      <button class="instalometro-btn" id="btn-identificacao">
+        📋 Identificação
+      </button>
+      <button class="instalometro-btn" id="btn-medidas">
+        📏 Medidas
+      </button>
+      <button class="instalometro-btn success" id="btn-checkin">
+        ✅ Check-In
+      </button>
+      <button class="instalometro-btn danger" id="btn-checkout">
+        🏁 Check-Out
+      </button>
+      <button class="instalometro-btn primary full-width" id="btn-dashboard">
+        📊 Ver Dashboard Completo
+      </button>
+    </div>
+    <div class="status-info" id="status-info">
+      Preencha as informações para começar
+    </div>
+  </div>
+
+  <script>
+    var t = TrelloPowerUp.iframe();
+
+    // Atualizar status
+    function updateStatus() {
+      t.get('card', 'shared', 'instalometroData', {})
+        .then(function(data) {
+          var statusDiv = document.getElementById('status-info');
+          var hasId = data.os && data.item_os && data.cliente;
+          var hasMeasures = data.m2Total > 0;
+          var hasCheckin = !!data.checkinTime;
+          var hasCheckout = !!data.checkoutTime;
+
+          if (hasCheckout) {
+            statusDiv.className = 'status-info complete';
+            statusDiv.textContent = '✅ Instalação concluída! Produtividade: ' + data.produtividade.toFixed(2) + ' m²/h';
+          } else if (hasCheckin) {
+            statusDiv.className = 'status-info warning';
+            var elapsed = Math.floor((new Date() - new Date(data.checkinTime)) / 1000 / 60);
+            statusDiv.textContent = '⏱️ Em andamento há ' + elapsed + ' minutos';
+          } else if (hasMeasures) {
+            statusDiv.className = 'status-info';
+            statusDiv.textContent = '📐 Medidas registradas: ' + data.m2Total.toFixed(2) + ' m²';
+          } else if (hasId) {
+            statusDiv.className = 'status-info';
+            statusDiv.textContent = '📋 OS ' + data.os + ' identificada';
+          } else {
+            statusDiv.className = 'status-info';
+            statusDiv.textContent = 'Preencha as informações para começar';
+          }
+        });
+    }
+
+    // Botão Identificação
+    document.getElementById('btn-identificacao').addEventListener('click', function() {
+      t.popup({
+        title: 'Identificação da Instalação',
+        url: './id_modal.html',
+        height: 350
+      }).then(updateStatus);
+    });
+
+    // Botão Medidas
+    document.getElementById('btn-medidas').addEventListener('click', function() {
+      t.popup({
+        title: 'Medidas da Instalação',
+        url: './measures_modal.html',
+        height: 400
+      }).then(updateStatus);
+    });
+
+    // Botão Check-In
+    document.getElementById('btn-checkin').addEventListener('click', function() {
+      t.popup({
+        title: 'Check-In - Início da Instalação',
+        url: './checkin_modal.html',
+        height: 350
+      }).then(updateStatus);
+    });
+
+    // Botão Check-Out
+    document.getElementById('btn-checkout').addEventListener('click', function() {
+      t.get('card', 'shared', 'instalometroData', {})
+        .then(function(data) {
+          if (!data.checkinTime) {
+            t.alert({
+              message: '⚠️ Você precisa fazer Check-In antes do Check-Out!',
+              duration: 5
+            });
+            return;
+          }
+          t.popup({
+            title: 'Check-Out - Fim da Instalação',
+            url: './checkout_modal.html',
+            height: 350
+          }).then(updateStatus);
+        });
+    });
+
+    // Botão Dashboard
+    document.getElementById('btn-dashboard').addEventListener('click', function() {
+      t.modal({
+        title: 'Dashboard Instalômetro',
+        url: './dashboard.html',
+        height: 600
+      });
+    });
+
+    // Atualizar status inicial
+    updateStatus();
+
+    // Atualizar status a cada 30 segundos
+    setInterval(updateStatus, 30000);
+  </script>
+</body>
+</html>
+
